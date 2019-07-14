@@ -1,7 +1,5 @@
-export = Object.assign({},
-  require("./hotkey"),
-  require("./icon"),
-  require("./image"),
-  require("./menu"),
-  require("./trayicon"),
-);
+export * from "./hotkey";
+export * from "./icon";
+export * from "./image";
+export * from "./menu";
+export * from "./trayicon";
