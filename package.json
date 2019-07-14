@@ -23,5 +23,14 @@
     "@types/ref": "^0.0.28",
     "@types/ref-array": "^0.0.28",
     "@types/ref-struct": "^0.0.29"
+  },
+  "files": [
+    "LICENSE",
+    "README.md",
+    "out"
+  ],
+  "scripts": {
+    "compile": "tsc",
+    "prepublish": "yarn compile"
   }
 }
