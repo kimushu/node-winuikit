@@ -42,6 +42,7 @@ export class TrayIcon extends EventEmitter {
       this.nid.uFlags |= NotifyIconFlags.NIF_TIP;
     }
     this.update(NotifyIconMessage.NIM_ADD);
+    process.on("exit", () => this.dispose());
     ++new.target.nextId;
   }
 
