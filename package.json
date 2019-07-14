@@ -1,6 +1,6 @@
 {
   "name": "winuikit",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Hotkey utility for Windows",
   "main": "index.js",
   "author": "kimu_shu",
