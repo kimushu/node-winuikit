@@ -1,6 +1,8 @@
 import { EventEmitter } from "events";
 import { MSG, UnregisterHotKey, RegisterHotKey, Modifiers, WindowMessages } from "./win32/winuser";
 import { MessageReceiver, PostMessageReceiver } from "./messagereceiver";
+import * as debugModule from "debug";
+const debug = debugModule("wuk:hotkey");
 
 const KEY2VK = {
   back: 8,
@@ -26,15 +28,22 @@ class KeyCode {
   static parse(key: string): KeyCode {
     let mod = 0;
     key = key.toLowerCase();
-    key = key.replace(/^(win|ctrl|shift|alt)\+/g, (prefix) => {
-      switch (prefix) {
-        case "win+": mod |= Modifiers.MOD_WIN; break;
-        case "ctrl+": mod |= Modifiers.MOD_CONTROL; break;
-        case "shift+": mod |= Modifiers.MOD_SHIFT; break;
-        case "alt+": mod |= Modifiers.MOD_ALT; break;
+    for (;;) {
+      let repeat = false;
+      key = key.replace(/^(win|ctrl|shift|alt)\+/, (prefix) => {
+        repeat = true;
+        switch (prefix) {
+          case "win+": mod |= Modifiers.MOD_WIN; break;
+          case "ctrl+": mod |= Modifiers.MOD_CONTROL; break;
+          case "shift+": mod |= Modifiers.MOD_SHIFT; break;
+          case "alt+": mod |= Modifiers.MOD_ALT; break;
+        }
+        return "";
+      });
+      if (!repeat) {
+        break;
       }
-      return "";
-    });
+    }
     let vk: number = null;
     let match: RegExpMatchArray;
     if (match = key.match(/^([0-9a-z])$/)) {
@@ -108,12 +117,12 @@ export class HotKey extends EventEmitter {
       uMsg: WindowMessages.WM_HOTKEY,
       wParam: this.id,
     }, (msg: MSG) => {
-      this.emit("pressed");
+      this.emit("press");
     });
     if (!RegisterHotKey(null, this.id, this.keyCode.mod, this.keyCode.vk)) {
       throw Error("RegisterHotKey failed");
     }
-    console.debug(`Registered hotkey (keyCode: "${this.keyCode}", id: ${this.id})`);
+    debug(`Registered hotkey (keyCode: "${this.keyCode}", id: ${this.id})`);
     ++new.target.nextId;
   }
 
