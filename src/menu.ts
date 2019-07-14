@@ -36,7 +36,7 @@ export class Menu extends EventEmitter {
   }
 
   appendSeparator(): MenuItem {
-    return this.appendItem(null, MenuFlags.MF_SEPARATOR);
+    return this.appendItem("", MenuFlags.MF_SEPARATOR);
   }
 
   appendSubMenu(content: string, subMenu: Menu, uFlags: number = 0): Menu {
