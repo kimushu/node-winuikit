@@ -2,7 +2,7 @@
   "name": "winuikit",
   "version": "0.1.0",
   "description": "Hotkey utility for Windows",
-  "main": "index.js",
+  "main": "out/index.js",
   "author": "kimu_shu",
   "license": "MIT",
   "dependencies": {
