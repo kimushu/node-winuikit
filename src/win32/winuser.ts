@@ -1,7 +1,7 @@
 import * as ffi from "ffi";
 import * as ref from "ref";
 import * as refStruct from "ref-struct";
-import { LONG, WPARAM, HWND, UINT, LPARAM, DWORD, HINSTANCE, LPCSTR, HICON, HCURSOR, CALLBACK, INT, HMENU, LPSTR, ULONG_PTR, HBRUSH, HBITMAP, BOOL, LRESULT, LPVOID, LONG_PTR, HANDLE, ATOM, UCS2STR } from "./windef";
+import { LONG, WPARAM, HWND, UINT, LPARAM, DWORD, HINSTANCE, LPCSTR, HICON, HCURSOR, CALLBACK, INT, HMENU, LPSTR, ULONG_PTR, HBRUSH, HBITMAP, BOOL, LRESULT, LPVOID, LONG_PTR, HANDLE, ATOM, LPWSTR, LPCWSTR } from "./windef";
 
 /**
  * Typedefs
@@ -149,7 +149,7 @@ export const HWND_MESSAGE = -3;
 
 const User32 = new ffi.Library("User32", {
   "AppendMenuA": [BOOL, [HMENU, UINT, ULONG_PTR, LPCSTR]],
-  "AppendMenuW": [BOOL, [HMENU, UINT, ULONG_PTR, UCS2STR]],
+  "AppendMenuW": [BOOL, [HMENU, UINT, ULONG_PTR, LPCWSTR]],
   "CreateMenu": [HMENU, []],
   "CreatePopupMenu": [HMENU, []],
   "CreateWindowExA": [HWND, [DWORD, LPCSTR, LPCSTR, DWORD, INT, INT, INT, INT, LONG_PTR, HMENU, HINSTANCE, LPVOID]],
@@ -168,7 +168,7 @@ const User32 = new ffi.Library("User32", {
   "UnregisterHotKey": [BOOL, [HWND, INT]],
 }) as {
   AppendMenuA: (hMenu: HMENU, uFlags: UINT, uIDNewItem: ULONG_PTR, lpNewItem: LPCSTR) => BOOL,
-  AppendMenuW: (hMenu: HMENU, uFlags: UINT, uIDNewItem: ULONG_PTR, lpNewItem: UCS2STR) => BOOL,
+  AppendMenuW: (hMenu: HMENU, uFlags: UINT, uIDNewItem: ULONG_PTR, lpNewItem: LPWSTR) => BOOL,
   CreateMenu: () => HMENU,
   CreatePopupMenu: () => HMENU,
   CreateWindowExA: (dwExStyle: DWORD, lpClassName: LPCSTR, lpWindowName: LPCSTR, dwStyle: DWORD, X: INT, Y: INT, nWidth: INT, nHeight: INT, hWndParent: LONG_PTR, hMenu: HMENU, hInstance: HINSTANCE, lpParam: LPVOID) => HWND;

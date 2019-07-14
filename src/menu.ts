@@ -1,7 +1,7 @@
 import { EventEmitter } from "events";
-import { CreatePopupMenu, CreateMenu, DestroyMenu, MenuFlags, TrackPopupMenu, POINT, GetCursorPos, WNDCLASSEXA, CreateWindowExA, HWND_MESSAGE, RegisterClassExA, DefWindowProcA, WindowMessages, AppendMenuW } from "./win32/winuser";
-import * as ffi from "ffi";
-import { HMENU, HWND, LRESULT, UINT, WPARAM, LPARAM, CALLBACK } from "./win32/windef";
+import { CreatePopupMenu, CreateMenu, DestroyMenu, MenuFlags, TrackPopupMenu, POINT, GetCursorPos, WindowMessages, AppendMenuW } from "./win32/winuser";
+import { HMENU } from "./win32/windef";
+import { SendMessageReceiver, PostMessageReceiver } from "./messagereceiver";
 
 export class Menu extends EventEmitter {
   constructor(handle?: HMENU) {
@@ -12,23 +12,23 @@ export class Menu extends EventEmitter {
         throw Error("CreateMenu() failed");
       }
     }
-    this.nativeHandle = handle;
+    this.hMenu = handle;
   }
 
   get handle(): HMENU {
-    return this.nativeHandle;
+    return this.hMenu;
   }
 
   dispose(): void {
-    if (!DestroyMenu(this.nativeHandle)) {
+    if (!DestroyMenu(this.hMenu)) {
       throw Error("DestroyMenu() failed");
     }
-    this.nativeHandle = null;
+    this.hMenu = null;
   }
 
   appendItem(content: string, uFlags: number = 0): MenuItem {
     const id = Menu.nextId;
-    if (!AppendMenuW(this.nativeHandle, uFlags | MenuFlags.MF_STRING, id, content)) {
+    if (!AppendMenuW(this.hMenu, uFlags | MenuFlags.MF_STRING, id, content)) {
       throw Error("AppendMenuW() failed");
     }
     ++Menu.nextId;
@@ -40,45 +40,14 @@ export class Menu extends EventEmitter {
   }
 
   appendSubMenu(content: string, subMenu: Menu, uFlags: number = 0): Menu {
-    if (!AppendMenuW(this.nativeHandle, uFlags | MenuFlags.MF_POPUP | MenuFlags.MF_STRING, subMenu.handle as any, content)) {
+    if (!AppendMenuW(this.hMenu, uFlags | MenuFlags.MF_POPUP | MenuFlags.MF_STRING, subMenu.handle as any, content)) {
       throw Error("AppendMenuW() failed");
     }
     return subMenu;
   }
 
-  protected static createReceiver(): HWND {
-    if (this.hWndReceiver != null) {
-      return this.hWndReceiver;
-    }
-    const wcl: WNDCLASSEXA = new WNDCLASSEXA({});
-    wcl.cbSize = WNDCLASSEXA.size;
-    this.wndProc = ffi.Callback(
-      LRESULT, [HWND, UINT, WPARAM, LPARAM],
-      (hWnd: HWND, uMsg: UINT, wParam: WPARAM, lParam: LPARAM): LRESULT => {
-        if (uMsg === WindowMessages.WM_COMMAND) {
-          this.dispatch(wParam, lParam);
-        }
-        return DefWindowProcA(hWnd, uMsg, wParam, lParam);
-      }
-    );
-    wcl.lpfnWndProc = this.wndProc;
-    wcl.lpszClassName = "winhotkey.menu";
-    if (RegisterClassExA((wcl as any).ref()) === 0) {
-      throw Error("RegisterClassExA() failed");
-    }
-    this.hWndReceiver = CreateWindowExA(0, wcl.lpszClassName, null, 0, 0, 0, 0, 0, HWND_MESSAGE, null, null, 0);
-    return this.hWndReceiver;
-  }
-
-  private static dispatch(wParam: WPARAM, lParam: LPARAM): void {
-    console.log("menu", wParam, lParam);
-  }
-
-  protected nativeHandle: HMENU;
+  protected hMenu: HMENU;
   private static nextId = 1;
-  private static menus: Menu[] = [];
-  private static hWndReceiver: HWND;
-  private static wndProc: CALLBACK;
 }
 
 export class PopupMenu extends Menu {
@@ -95,7 +64,7 @@ export class PopupMenu extends Menu {
     if (!GetCursorPos((pt as any).ref())) {
       throw Error("GetCursorPos() failed");
     }
-    if (!TrackPopupMenu(this.nativeHandle, uFlags, pt.x, pt.y, 0, Menu.createReceiver(), null)) {
+    if (!TrackPopupMenu(this.hMenu, uFlags, pt.x, pt.y, 0, SendMessageReceiver.handle, null)) {
       throw Error("TrackPopupMenu() failed");
     }
   }
@@ -104,5 +73,20 @@ export class PopupMenu extends Menu {
 export class MenuItem extends EventEmitter {
   constructor(private parent: Menu, readonly id: number) {
     super();
+    this.receiver = new PostMessageReceiver({
+      uMsg: WindowMessages.WM_COMMAND,
+      wParam: id,
+    }, (msg) => {
+      this.emit("command");
+    });
   }
+
+  dispose(): void {
+    if (this.receiver != null) {
+      this.receiver.dispose();
+      this.receiver = null;
+    }
+  }
+
+  protected receiver: PostMessageReceiver;
 }

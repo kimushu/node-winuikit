@@ -1,6 +1,6 @@
 import { EventEmitter } from "events";
-import { MessageListener } from "./messagelistener";
 import { MSG, UnregisterHotKey, RegisterHotKey, Modifiers, WindowMessages } from "./win32/winuser";
+import { MessageReceiver, PostMessageReceiver } from "./messagereceiver";
 
 const KEY2VK = {
   back: 8,
@@ -104,19 +104,17 @@ export class HotKey extends EventEmitter {
       this.keyCode = KeyCode.parse(keyOrKeyCode);
     }
     this.id = new.target.nextId;
+    this.receiver = new PostMessageReceiver({
+      uMsg: WindowMessages.WM_HOTKEY,
+      wParam: this.id,
+    }, (msg: MSG) => {
+      this.emit("pressed");
+    });
     if (!RegisterHotKey(null, this.id, this.keyCode.mod, this.keyCode.vk)) {
       throw Error("RegisterHotKey failed");
     }
     console.debug(`Registered hotkey (keyCode: "${this.keyCode}", id: ${this.id})`);
-    if (!new.target.hasListener) {
-      MessageListener.mainLoop.on("message", (msg: MSG) => {
-        if (msg.uMsg === WindowMessages.WM_HOTKEY) {
-          new.target.dispatch(msg.wParam, msg.lParam);
-        }
-      });
-    }
     ++new.target.nextId;
-    new.target.hotKeys[this.id] = this;
   }
 
   /**
@@ -141,32 +139,22 @@ export class HotKey extends EventEmitter {
    * Unregister hotkey
    */
   unregister(): void {
-    if (!UnregisterHotKey(null, this.id)) {
-      throw Error("UnregisterHotKey failed");
+    this.dispose();
+  }
+
+  dispose(): void {
+    if (this.receiver != null) {
+      this.receiver.dispose();
+      this.receiver = null;
+    }
+    if (this.id != null) {
+      if (!UnregisterHotKey(null, this.id)) {
+        throw Error("UnregisterHotKey failed");
+      }
     }
     this.block();
   }
-
-  /**
-   * Dispatch WM_HOTKEY message
-   * @param wParam wParam
-   * @param lParam lParam
-   */
-  static dispatch(wParam: number, lParam: number): void {
-    const id = wParam;
-    const hotKey = this.hotKeys[id];
-    if (hotKey == null) {
-      return;
-    }
-    if (hotKey.blocked) {
-      return;
-    }
-    hotKey.emit("hotkey", hotKey);
-  }
-
   private isBlocked = false;
-
-  private static hotKeys: HotKey[] = [];
+  private receiver: MessageReceiver;
   private static nextId = 1;
-  private static hasListener = false;
 }

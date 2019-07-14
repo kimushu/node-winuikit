@@ -1,49 +1,25 @@
 import * as ffi from "ffi";
 import * as ref from "ref";
 import * as refStruct from "ref-struct";
-import * as refArray from "ref-array";
-
-type ArrayInstance<T> = {
-  [i: number]: T; length: number; toArray(): T[];
-  toJSON(): T[]; inspect(): string; buffer: Buffer; ref(): Buffer;
-};
 
 import { GUID } from "./guiddef";
-import { HWND, HICON } from "./windef";
+import { HWND, HICON, UINT, DWORD, WSTRBUF, BOOL } from "./windef";
 
-export type NOTIFYICONDATAA = {
-  cbSize: number;
-  hWnd: HWND;
-  uID: number;
-  uFlags: number;
-  uCallbackMessage: number;
-  hIcon: HICON;
-  szTip: ArrayInstance<number>;
-  dwState: number;
-  dwStateMask: number;
-  szInfo: ArrayInstance<number>;
-  uTimeout: number;
-  szInfoTitle: ArrayInstance<number>;
-  dwInfoFlags: number;
-  guidItem: GUID;
-  hBalloonIcon: HICON;
+export type NOTIFYICONDATAW = {
+  cbSize: DWORD, hWnd: HWND, uID: UINT, uFlags: UINT, uCallbackMessage: UINT,
+  hIcon: HICON, szTip: WSTRBUF<128>,
+  dwState: DWORD, dwStateMask: DWORD,
+  szInfo: WSTRBUF<256>, uTimeout: UINT,
+  szInfoTitle: WSTRBUF<64>,
+  dwInfoFlags: DWORD, guidItem: GUID, hBalloonIcon: HICON,
 };
-export const NOTIFYICONDATAA = refStruct({
-  cbSize: ref.types.uint32,
-  hWnd: HWND,
-  uID: ref.types.uint32,
-  uFlags: ref.types.uint32,
-  uCallbackMessage: ref.types.uint32,
-  hIcon: HICON,
-  szTip: refArray(ref.types.char, 128),
-  dwState: ref.types.uint32,
-  dwStateMask: ref.types.uint32,
-  szInfo: refArray(ref.types.char, 256),
-  uTimeout: ref.types.uint32,
-  szInfoTitle: refArray(ref.types.char, 64),
-  dwInfoFlags: ref.types.uint32,
-  guidItem: GUID,
-  hBalloonIcon: HICON,
+export const NOTIFYICONDATAW = refStruct({
+  cbSize: DWORD, hWnd: HWND, uID: UINT, uFlags: UINT, uCallbackMessage: UINT,
+  hIcon: HICON, szTip: WSTRBUF(128),
+  dwState: DWORD, dwStateMask: DWORD,
+  szInfo: WSTRBUF(256), uTimeout: UINT,
+  szInfoTitle: WSTRBUF(64),
+  dwInfoFlags: DWORD, guidItem: GUID, hBalloonIcon: HICON,
 });
 
 export enum NotifyIconFlags {
@@ -82,9 +58,9 @@ export enum NotifyIconMessage {
 }
 
 const Shell32 = ffi.Library("shell32", {
-  "Shell_NotifyIconA": ["bool", ["uint32", ref.refType(NOTIFYICONDATAA)]],
+  "Shell_NotifyIconW": [BOOL, [DWORD, ref.refType(NOTIFYICONDATAW)]],
 }) as {
-  Shell_NotifyIconA: (dwMessage: number, lpData: ref.Type) => boolean
+  Shell_NotifyIconW: (dwMessage: number, lpData: ref.Type) => boolean
 };
 
-export const { Shell_NotifyIconA } = Shell32;
+export const { Shell_NotifyIconW } = Shell32;
